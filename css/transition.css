@@ -1,11 +1,12 @@
-﻿#vueg-background {
-    position: absolute;
-    z-index: -1;
-    top: 0;
-    width: 100%;
-    height:inherit;
-    overflow: hidden;
-    background: #f8f8f8;
+.stack-animation {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height:inherit;
+  overflow: hidden;
+  /* the sdx navigation is set to 50'000 */
+  z-index: 100000;
+  background: inherit;
 }
 
 /*兼容ios*/

@@ -1,8 +1,8 @@
 let transition = {}
 transition.install = (Vue, router, options = {}) => {
     let route, lastPath, transitionType, binding = {},
-        op, //配置项
-        instances, //组件激活时判断是否属于route中，不属于无动画
+        op, // Configuration item
+        instances, // When the component is activated to determine whether it belongs to the route, does not belong to no animation
         coord = { x: 0, y: 0 } //按下坐标
 
     _initOptions()
@@ -13,11 +13,15 @@ transition.install = (Vue, router, options = {}) => {
         }
     })
 
-    //旧组件退出后会被销毁，所以建个容器，在销毁后重新挂在上去，作为“底色”
+    // Old components will be destroyed after the exit, so build a container, after the re-hanging in the destruction, as the "background"
     function setBackground() {
-        //不属于当前进场路由匹配到的组件，则不处理
+        // Components are not matched to the current approach routes, not processed
 
         // this.$el.classList.add('animated','fadeOut')
+
+        let el = this.$el
+        if (!el) //容错
+            return
 
         let obj = this.$el.classList
         if (!obj)
@@ -32,7 +36,7 @@ transition.install = (Vue, router, options = {}) => {
                 if (item === 'animated')
                     isInArr = true
             })
-            //我想屎。。。
+            // guard。。。
         if (!isInArr)
             return
 
@@ -41,7 +45,7 @@ transition.install = (Vue, router, options = {}) => {
         let vm = instances.default
         if (vm) {
 
-            //获取组件vueg配置
+            // Get the component vueg configuration
             let vuegConfig = vm.$data.vuegConfig
             if (vuegConfig) {
                 Object.keys(vuegConfig).forEach(key => {
@@ -49,22 +53,22 @@ transition.install = (Vue, router, options = {}) => {
                 })
             }
 
-            //禁用转场则不设置底色
+            // Disable transitions without setting background
             if (op.disable)
                 return
 
-            //每次重新挂载vue都会清空被挂载元素，所有每次都要再添加进去
+            // Each time you reload vue will empty the mounted element, and every time you add it
             let vuegBac = document.getElementById('vueg-background')
-                //不存在就插入
+                // Do not exist on the insert
             if (!vuegBac) {
                 vm.$el.parentElement.appendChild(bacgrEle)
                 vuegBac = bacgrEle
             }
+            if (!op.isStackAnim) vuegBac.classList.add('stack-animation')
 
             vuegBac.innerHTML = ''
             vuegBac.classList = []
             vuegBac.appendChild(this.$el)
-                // console.log(vuegBac)
         }
     }
     Vue.mixin({
@@ -84,25 +88,25 @@ transition.install = (Vue, router, options = {}) => {
             fromDepth += 1
         transitionType = toDepth > fromDepth ? 'forward' : 'back'
 
-        //深度相同
+        // The same depth
         if (toDepth === fromDepth) {
             if (lastPath === to.path) {
                 transitionType = 'back'
             } else {
                 transitionType = 'forward'
             }
-            //深度相同时禁用动画
+            // When the depth is the same, the animation is disabled
             if (op.sameDepthDisable)
                 transitionType = ''
 
             lastPath = from.path
         }
 
-        //首次进入无效果
+        // First entry has no effect
         if (to.path === from.path && to.path === lastPath)
             transitionType = 'first'
 
-        //关闭首次进入渐进动画
+        // Turn off the progressive animation for the first time
         if (op.firstEntryDisable)
             transitionType = ''
 
@@ -129,7 +133,7 @@ transition.install = (Vue, router, options = {}) => {
             }
         }
 
-        //获取进场的组件instances，{default:component}
+        // Get the incoming component instances, {default: component}
         let matched = to.matched[0]
         if (matched && matched.instances) {
             instances = matched.instances
@@ -151,7 +155,7 @@ transition.install = (Vue, router, options = {}) => {
         else return true
     }
 
-    //router.afterEach后获得新页面的组件，组件渲染或激活后触发addEffect
+    // Router.afterEach after getting the new page of the component, the component renders or activates after triggering the addEffect
     function addEffect(ins = this) {
         //不属于当前进场路由匹配到的组件，则无动画
         if (!isInRoute.call(ins))
@@ -168,7 +172,7 @@ transition.install = (Vue, router, options = {}) => {
         if (!el.parentElement)
             return
 
-        //防止某组件的配置影响其他组件，每次都初始化一下数据
+        // To prevent the configuration of a component affect other components, each time to initialize the data
         _initOptions()
 
         //全局vueg配置
@@ -185,20 +189,29 @@ transition.install = (Vue, router, options = {}) => {
             })
         }
 
-        //禁用转场动画配置
+        // Disable transition animation configuration
         if (op.disable)
             transitionType = ''
+
+        let oldEl = el;
+        if (op.isStackAnim) {
+          // if we're in stack mode, the back animation has the elements to animate reversed
+          if (transitionType === 'back') {
+            el = document.getElementById('vueg-background')
+          }
+        }
+        el.classList.add('stack-animation')
 
         if (op.shadow)
             el.style.boxShadow = '0 3px 10px rgba(0, 0, 0, .156863), 0 3px 10px rgba(0, 0, 0, .227451)'
 
-        //设置首次进入的渐进显示时长
+        // Sets the progressive display duration for the first time
         if (transitionType === 'first') {
             el.style.animationDuration = op.firstEntryDuration + 's'
             el.classList.add('fadeIn')
         }
 
-        //转场动画时长
+        // Transition animation time
         if (transitionType)
             el.style.animationDuration = op.duration + 's'
 
@@ -250,7 +263,7 @@ transition.install = (Vue, router, options = {}) => {
                                     left:${-centerPoint.x+coord.x}px;
                                     top:${-centerPoint.y+coord.y}px;
                                 }
-                                to{ 
+                                to{
                                     opacity:1;
                                     transform: scale3d(1, 1, 1);
                                     left:0;
@@ -265,18 +278,25 @@ transition.install = (Vue, router, options = {}) => {
             }
         }
 
-        //动画完成后移除class
+        // Remove the class after the animation is complete
         setTimeout(() => {
-                el.classList.remove(op.forwardAnim)
-                el.classList.remove(op.backAnim)
+                oldEl.classList.add('animated')
+
+                if (el && el.classList) {
+                  el.classList.remove(op.forwardAnim, op.backAnim, 'stack-animation')
+                }
+                el.style.boxShadow = ''
                 el.style.animationDuration = '0s'
                 let vuegBac = document.getElementById('vueg-background')
-                if (vuegBac)
+                if (vuegBac) {
                     vuegBac.innerHTML = ''
+                    vuegBac.classList = []
+                    vuegBac.style = ''
+                }
 
                 if (coordAnim.findIndex(item => item === anim) !== -1)
                     style.innerHTML = ''
-            }, op.duration * 1000 + 300) //加300毫秒延迟 因为有时动画还没完成就被移除了
+            }, op.duration * 1000 + 300) // Plus 300 millisecond delay because sometimes the animation has not been completed to be removed
         setTimeout(() => {
             el.classList.remove('fadeIn')
         }, op.firstEntryDuration * 1000);
@@ -299,13 +319,14 @@ transition.install = (Vue, router, options = {}) => {
 
 
     function _initOptions() {
-        //默认配置
+        // default options
         op = {
             duration: '0.3', //动画时长
             firstEntryDisable: false, //值为true时禁用首次进入的渐进动画
-            firstEntryDuration: '.6', //首次进入渐进动画时长
-            forwardAnim: 'fadeInRight', //前进动画
-            backAnim: 'fadeInLeft', //后退动画
+            firstEntryDuration: '.6', // The first time you enter the progressive animation
+            forwardAnim: 'fadeInRight', // Forward animation
+            backAnim: 'fadeInLeft', // Back animation
+            isStackAnim: false,
             sameDepthDisable: false, //url级别相同时禁用动画
             tabs: [], //name填写对应路由的name,以实现类似app中点击tab页面水平转场效果，如tab[1]到tab[0]，会使用forwardAnim动画，tab[1]到tab[2]，会使用backAnim动画
             tabsDisable: false, //值为true时，tabs间的转场没有动画
