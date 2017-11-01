@@ -291,7 +291,7 @@ transition.install = (Vue, router, options = {}) => {
                 if (vuegBac) {
                     vuegBac.innerHTML = ''
                     vuegBac.classList = []
-                    vuegBac.style = ''
+                    vuegBac.removeAttribute('style')
                 }
 
                 if (coordAnim.findIndex(item => item === anim) !== -1)
